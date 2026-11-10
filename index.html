@@ -283,6 +283,7 @@
 <use href="#gold-star" x="312" y="204" opacity=".76"/><use href="#gold-star" x="289" y="508" opacity=".85"/>
 </svg>
 <div class="winter-fx" aria-hidden="true"></div>
+<button class="motion-toggle" type="button" hidden>Пауза анимации</button>
 <span class="corner tl" aria-hidden="true">✧</span><span class="corner tr" aria-hidden="true">✧</span><span class="corner bl" aria-hidden="true">✧</span><span class="corner br" aria-hidden="true">✧</span>
 <div class="shell hero-intro">
 <h1 class="jubilee">
@@ -322,6 +323,7 @@
 <script>
 const hero = document.querySelector('.hero');
 const snow = hero.querySelector('.winter-fx');
+const motion = hero.querySelector('.motion-toggle');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 const goldArt = hero.querySelector('.gold-number-art');
@@ -332,6 +334,7 @@ let introFallback = 0;
 
 function finishGoldIntro() {
   if (!hero.classList.contains('intro-assembling')) return;
+
   cancelAnimationFrame(introFrame);
   clearTimeout(introFallback);
   sparks.hidden = true;
@@ -377,21 +380,18 @@ async function playGoldIntro() {
 
   hero.classList.add('intro-assembling');
   introFallback = setTimeout(finishGoldIntro, 1100);
-  
   try {
     await goldImage.decode();
   } catch {
     finishGoldIntro();
     return;
   }
-  
   if (!hero.classList.contains('intro-assembling')) return;
 
   clearTimeout(introFallback);
   const width = sparks.width = 560;
   const height = sparks.height = Math.round(width * goldImage.naturalHeight / goldImage.naturalWidth);
   const particles = sampleGoldSparks(context, width, height);
-  
   if (!particles.length) {
     finishGoldIntro();
     return;
@@ -430,6 +430,7 @@ async function playGoldIntro() {
   introFrame = requestAnimationFrame(draw);
 }
 
+
 function createSnow() {
   if (reducedMotion.matches || snow.childElementCount) return;
 
@@ -447,16 +448,24 @@ function createSnow() {
   }
 }
 
-// Запускаем анимации без кнопки
+motion.hidden = false;
+motion.addEventListener('click', () => {
+  const paused = hero.classList.toggle('motion-paused');
+  if (paused) finishGoldIntro();
+  motion.textContent = paused ? 'Включить анимацию' : 'Пауза анимации';
+});
+
 createSnow();
 reducedMotion.addEventListener('change', createSnow);
 reducedMotion.addEventListener('change', finishGoldIntro);
 playGoldIntro();
 
+
 const detailsIntro = document.querySelector('.section-top');
 if (!reducedMotion.matches && 'IntersectionObserver' in window) {
   const observer = new IntersectionObserver(([entry]) => {
     if (!entry.isIntersecting) return;
+
     detailsIntro.classList.remove('reveal-ready');
     detailsIntro.classList.add('reveal-in');
     observer.disconnect();
